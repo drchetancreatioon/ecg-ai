@@ -1,5 +1,8 @@
-
 import os
+import sys
+
+# --- ADD THIS LINE TO FIX THE MODULE ERROR ---
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import wfdb
 import pandas as pd
 import numpy as np
