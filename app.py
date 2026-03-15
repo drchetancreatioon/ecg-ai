@@ -73,7 +73,7 @@ if uploaded_file:
                 st.subheader("🧠 Clinical Insight")
                 with st.spinner("Gemini generating report..."):
                     try:
-                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        model = genai.GenerativeModel('models/gemini-1.5-flash')
                         prompt = (
                             f"The patient's ECG was classified as '{label}' by a Deep Learning model "
                             f"with {conf*100:.1f}% confidence. Provide a concise medical explanation "
