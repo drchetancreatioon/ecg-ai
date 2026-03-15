@@ -98,3 +98,14 @@ if uploaded_file:
                         st.markdown(response.text)
                     except Exception as e:
                         st.error(f"Gemini Error: {e}")
+                        # --- ADMIN SECTION (Hidden in Sidebar) ---
+           with st.sidebar.expander("🛠️ Admin: System Initialization"):
+    st.write("If you see 'model.pth not found', click below.")
+    if st.button("Initialize & Train Model"):
+        with st.spinner("Downloading data & training... this takes a moment."):
+            try:
+                from model.train_model import download_and_train
+                download_and_train()
+                st.success("Model initialized! You can now analyze ECGs.")
+            except Exception as e:
+                st.error(f"Initialization Failed: {e}")
