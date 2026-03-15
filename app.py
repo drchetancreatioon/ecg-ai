@@ -1,32 +1,40 @@
 import streamlit as st
+import numpy as np
 import google.generativeai as genai
-from utils.dataset_loader import preprocess_signal
-from model.inference import get_prediction
+from model.inference import predict_ecg
 
-# Configure Gemini
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+# --- CONFIG ---
+st.set_page_config(page_title="ECG AI Interpreter", page_icon="🩺")
+genai.configure(api_key=st.secrets.get("GEMINI_API_KEY", "YOUR_KEY_HERE"))
 
-st.title("🩺 Advanced AI ECG Interpreter")
-st.write("Hybrid System: Deep Learning Classification + Gemini Clinical Insight")
+st.title("🩺 Advanced ECG AI Interpreter")
+st.markdown("---")
 
-uploaded_file = st.file_uploader("Upload ECG Signal (Numpy or CSV format)", type=['npy', 'csv'])
+uploaded_file = st.file_uploader("Upload ECG Data (.npy format)", type=["npy"])
 
 if uploaded_file:
-    # 1. Load and Preprocess
-    # (Simulated for example: loading a 12x1000 signal)
-    ecg_data = np.load(uploaded_file) 
-    tensor = preprocess_signal(ecg_data)
+    # Load data
+    data = np.load(uploaded_file)
     
-    # 2. DL Model Prediction
-    label, conf = get_prediction(tensor)
-    
-    st.success(f"**DL Diagnosis:** {label} ({conf*100:.1f}% Confidence)")
-
-    # 3. Gemini Explanation
-    if st.button("Generate Clinical Interpretation"):
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"The patient's 12-lead ECG was analyzed by a CNN model and classified as {label}. Provide a detailed medical explanation for this finding, potential symptoms, and common clinical next steps."
+    if data.shape == (12, 1000):
+        st.line_chart(data[0]) # Show Lead I for visualization
         
-        response = model.generate_content(prompt)
-        st.markdown("### 🧠 Gemini Interpretation")
-        st.write(response.text)
+        if st.button("Analyze ECG"):
+            with st.spinner("Deep Learning Model Analyzing..."):
+                label, conf = predict_ecg(data)
+                
+            st.subheader(f"Analysis Result: {label}")
+            st.info(f"Confidence Score: {conf*100:.2f}%")
+            
+            # Gemini Clinical Explanation
+            with st.spinner("Gemini generating clinical report..."):
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                prompt = f"The patient's ECG was classified as '{label}'. Explain this condition, its significance in a clinical setting, and common next steps for a physician."
+                response = model.generate_content(prompt)
+                
+            st.markdown("### 📋 Clinical Insight (Gemini AI)")
+            st.write(response.text)
+    else:
+        st.error("Invalid shape! Please upload a 12-lead signal with 1000 samples (12, 1000).")
+
+st.sidebar.info("This tool uses a Hybrid CNN + LLM architecture for medical signal analysis.")
