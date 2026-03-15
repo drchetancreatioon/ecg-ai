@@ -10,21 +10,31 @@ genai.configure(api_key=st.secrets.get("GEMINI_API_KEY", "YOUR_KEY_HERE"))
 st.title("🩺 Advanced ECG AI Interpreter")
 st.markdown("---")
 
-uploaded_file = st.file_uploader("Upload ECG Data (.npy format)", type=["npy"])
+import cv2
+from PIL import Image
+
+uploaded_file = st.file_uploader("Upload ECG Photo or Data", type=["npy", "jpg", "jpeg", "png"])
 
 if uploaded_file:
-    # Load data
-    data = np.load(uploaded_file)
-    
-    if data.shape == (12, 1000):
-        st.line_chart(data[0]) # Show Lead I for visualization
+    if uploaded_file.type in ["image/jpeg", "image/png"]:
+        # --- NEW IMAGE PROCESSING LOGIC ---
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Uploaded ECG", use_container_width=True)
         
-        if st.button("Analyze ECG"):
-            with st.spinner("Deep Learning Model Analyzing..."):
-                label, conf = predict_ecg(data)
-                
-            st.subheader(f"Analysis Result: {label}")
-            st.info(f"Confidence Score: {conf*100:.2f}%")
+        # Convert image to grayscale and resize to match model expected length
+        img_array = np.array(image.convert('L')) # Grayscale
+        resized = cv2.resize(img_array, (1000, 12)) # Force into 12 leads x 1000 samples
+        
+        # Normalize pixel values (0-255) to signal values (-1 to 1)
+        data = (resized.astype(np.float32) / 127.5) - 1.0
+        st.warning("⚠️ Note: Image-to-signal conversion is an approximation.")
+    else:
+        # Load standard numpy data
+        data = np.load(uploaded_file)
+
+    if st.button("Analyze ECG"):
+        label, conf = predict_ecg(data)
+        # ... (rest of your analysis code)
             
             # Gemini Clinical Explanation
             with st.spinner("Gemini generating clinical report..."):
